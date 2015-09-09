@@ -5,13 +5,15 @@
  */
 package processtweets;
 
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.FileInputFormat;
-import org.apache.hadoop.mapred.FileOutputFormat;
-import org.apache.hadoop.mapred.JobClient;
-import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 /**
  *
@@ -22,24 +24,22 @@ public class ProcessTweets {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
-        JobClient client = new JobClient();
-        JobConf conf = new JobConf(ProcessTweets.class);
+        Job client = new Job(new Configuration());
         
-        conf.setOutputKeyClass(Text.class);
-        conf.setOutputValueClass(IntWritable.class);
+        client.setOutputKeyClass(Text.class);
+        client.setOutputValueClass(IntWritable.class);
+        client.setInputFormatClass(TextInputFormat.class);
+        TextInputFormat.addInputPath(client, new Path("input"));//
+        TextOutputFormat.setOutputPath(client, new Path("output2"));
         
-        FileInputFormat.addInputPath(conf, new Path("input"));
-        FileOutputFormat.setOutputPath(conf, new Path("output2"));
+        client.setMapperClass(ProcessTweetsMapper.class);
+        client.setReducerClass(ProcessTweetsReducer.class);
+        client.setCombinerClass(ProcessTweetsReducer.class);
         
-        conf.setMapperClass(Mapper.class);
-        conf.setReducerClass(Reducer.class);
-        conf.setCombinerClass(Reducer.class);
-        
-        client.setConf(conf);
         try {
-            JobClient.runJob(conf);
+            client.submit();
         } catch (Exception e) {
             e.printStackTrace();
         }
